@@ -496,9 +496,7 @@ def page_overview(df):
             xaxis_title='Diet Quality',
             height=400,
             showlegend=True,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            font={'family': 'Poppins'}
         )
         fig = apply_plotly_readable(fig) 
         st.plotly_chart(fig, use_container_width=True, key="violin_diet")
