@@ -28,51 +28,83 @@ st.set_page_config(
 # CUSTOM CSS FOR BETTER STYLING
 # ============================================================================
 st.markdown("""
-    <style>
-    .main {
-        padding: 0rem 1rem;
-    }
-    .stMetric {
-        background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        padding-left: 20px;
-        padding-right: 20px;
-        background-color: #f0f2f6;
-        border-radius: 5px 5px 0px 0px;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #4CAF50;
-        color: white;
-    }
-    h1 {
-        color: #2c3e50;
-        padding-bottom: 10px;
-        border-bottom: 3px solid #4CAF50;
-    }
-    h2 {
-        color: #34495e;
-        margin-top: 20px;
-    }
-    h3 {
-        color: #7f8c8d;
-    }
-    .insight-box {
-        background-color: #e8f5e9;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 5px solid #4CAF50;
-        margin: 10px 0;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+/* ---------------------------
+   Make text readable on light cards even in Dark theme
+---------------------------- */
+
+/* Metric container (Streamlit uses data-testid a lot; this is reliable) */
+div[data-testid="stMetric"] {
+    background: #f8fafc !important;           /* light card */
+    border: 1px solid rgba(15, 23, 42, 0.12) !important;
+    padding: 16px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.10) !important;
+}
+
+/* Force ALL metric text to dark so it stays readable */
+div[data-testid="stMetric"] * {
+    color: #0f172a !important;                /* near-black */
+}
+
+/* Make the value stand out */
+div[data-testid="stMetricValue"] {
+    font-weight: 800 !important;
+    font-size: 28px !important;
+    line-height: 1.1 !important;
+}
+
+/* Delta styling (still readable) */
+div[data-testid="stMetricDelta"] {
+    font-weight: 700 !important;
+    font-size: 14px !important;
+}
+
+/* ---------------------------
+   Key Takeaways / Insight box (your custom class)
+---------------------------- */
+.insight-box {
+    background: #e8f5e9 !important;          /* light green */
+    border-left: 6px solid #22c55e !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+    margin: 10px 0 18px 0 !important;
+}
+
+/* Force text inside insight box to dark */
+.insight-box, .insight-box * {
+    color: #0b1f12 !important;
+}
+
+/* ---------------------------
+   Tabs readability (optional but helps)
+---------------------------- */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 14px !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 46px !important;
+    padding: 8px 18px !important;
+    background: #f1f5f9 !important;          /* light tab */
+    border: 1px solid rgba(15, 23, 42, 0.12) !important;
+    border-radius: 12px 12px 0 0 !important;
+    color: #0f172a !important;
+}
+
+.stTabs [data-baseweb="tab"] p {
+    font-weight: 700 !important;
+}
+
+/* Selected tab */
+.stTabs [aria-selected="true"] {
+    background: #22c55e !important;
+    color: #06260f !important;
+    border-bottom: 2px solid transparent !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================================
 # DATA LOADING & PREPROCESSING
