@@ -437,11 +437,9 @@ def page_overview(df):
         
         fig.update_layout(
             height=350,
-            margin=dict(l=20, r=20, t=60, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            font={'color': "#f5576c", 'family': "Poppins"}
+            margin=dict(l=20, r=20, t=60, b=20)
         )
-        
+        fig = apply_plotly_readable(fig) 
         st.plotly_chart(fig, use_container_width=True, key="gauge_stress")
         st.caption("✅ Target: Below 5 for healthy stress")
     
@@ -502,7 +500,7 @@ def page_overview(df):
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(250,250,250,1)'
         )
-        
+        fig = apply_plotly_readable(fig) 
         st.plotly_chart(fig, use_container_width=True, key="violin_diet")
         st.caption("🍎 Wider shapes indicate more people at that wellbeing level")
     
