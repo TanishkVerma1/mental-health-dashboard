@@ -26,153 +26,146 @@ st.set_page_config(
 # MAGICAL CSS STYLING
 # ============================================================================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-    
-    * {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0;
-    }
-    
-    .block-container {
-        padding: 2rem 3rem;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        margin: 1rem;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    
-    .stMetric {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        color: white;
-        transition: transform 0.3s ease;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
-    }
-    
-    .stMetric label {
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-weight: 600 !important;
-        font-size: 14px !important;
-    }
-    
-    .stMetric .metric-value {
-        color: white !important;
-        font-size: 32px !important;
-        font-weight: 700 !important;
-    }
-    
-    h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700;
-        font-size: 3rem;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    h2 {
-        color: #667eea;
-        font-weight: 600;
-        margin-top: 2rem;
-    }
-    
-    h3 {
-        color: #764ba2;
-        font-weight: 600;
-    }
-    
-    .insight-box {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        padding: 20px;
-        border-radius: 15px;
-        color: white;
-        margin: 15px 0;
-        box-shadow: 0 8px 20px rgba(240, 147, 251, 0.4);
-        animation: fadeIn 0.5s ease-in;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 10px;
-        border-radius: 15px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: white !important;
-        color: #667eea !important;
-    }
-    
-    .stButton>button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 30px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-    
-    .highlight-card {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        padding: 20px;
-        border-radius: 15px;
-        margin: 10px 0;
-        box-shadow: 0 8px 20px rgba(168, 237, 234, 0.4);
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    .css-1d391kg, .css-1v0mbdj {
-        color: white !important;
-    }
-    
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root{
+  --bg: #0b1220;               /* page background (dark but subtle) */
+  --panel: #ffffff;            /* main content panel */
+  --text: #0f172a;             /* main text */
+  --muted: #475569;            /* secondary text */
+  --brand: #4f46e5;            /* indigo */
+  --brand2: #7c3aed;           /* purple */
+  --card: #f8fafc;             /* light card */
+  --border: rgba(15, 23, 42, 0.12);
+}
+
+/* App background */
+.stApp {
+  background: radial-gradient(1200px 800px at 10% 10%, rgba(79,70,229,0.35), transparent 60%),
+              radial-gradient(900px 700px at 90% 20%, rgba(124,58,237,0.25), transparent 55%),
+              var(--bg);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Main content container */
+.block-container {
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 2rem 2.5rem;
+  margin: 1.2rem;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+}
+
+/* Headings / text */
+h1, h2, h3, h4, h5, h6, p, li, span, div {
+  color: var(--text);
+}
+.small, .stCaption, .stMarkdown p {
+  color: var(--muted);
+}
+
+/* Make markdown links readable */
+a, a:visited { color: var(--brand); }
+
+/* ---------- Metric cards (reliable selectors) ---------- */
+div[data-testid="stMetric"]{
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 16px;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.08);
+}
+div[data-testid="stMetric"] *{
+  color: var(--text) !important;
+}
+div[data-testid="stMetricValue"]{
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.3px;
+}
+div[data-testid="stMetricLabel"]{
+  font-weight: 700 !important;
+}
+div[data-testid="stMetricDelta"]{
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+/* ---------- Insight box ---------- */
+.insight-box{
+  background: #eef2ff;
+  border: 1px solid rgba(79,70,229,0.25);
+  border-left: 6px solid var(--brand);
+  border-radius: 14px;
+  padding: 18px 18px;
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.08);
+}
+.insight-box, .insight-box *{
+  color: var(--text) !important;
+}
+
+/* ---------- Tabs ---------- */
+.stTabs [data-baseweb="tab-list"]{
+  gap: 10px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+}
+.stTabs [data-baseweb="tab"]{
+  height: 44px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 700;
+}
+.stTabs [aria-selected="true"]{
+  background: linear-gradient(135deg, var(--brand), var(--brand2)) !important;
+  color: white !important;
+  border: none !important;
+}
+.stTabs [aria-selected="true"] p{ color: white !important; }
+
+/* ---------- Buttons ---------- */
+.stButton>button, .stDownloadButton>button{
+  background: linear-gradient(135deg, var(--brand), var(--brand2));
+  color: white !important;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(79,70,229,0.25);
+}
+.stButton>button:hover, .stDownloadButton>button:hover{
+  transform: translateY(-1px);
+}
+
+/* ---------- Sidebar (keep branded but readable) ---------- */
+[data-testid="stSidebar"]{
+  background: linear-gradient(180deg, rgba(79,70,229,0.95), rgba(124,58,237,0.95));
+}
+[data-testid="stSidebar"] *{
+  color: #ffffff !important;
+}
+[data-testid="stSidebar"] .stMarkdown p{
+  color: rgba(255,255,255,0.9) !important;
+}
+
+/* Ensure selectbox/multiselect text is readable on sidebar */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea {
+  color: #0f172a !important;
+}
+
+/* Remove weird old class references that break across versions */
+.css-1d391kg, .css-1v0mbdj { color: inherit !important; }
+
+</style>
+""", unsafe_allow_html=True)
+
 
 # ============================================================================
 # DATA LOADING
