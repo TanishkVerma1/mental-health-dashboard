@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -66,12 +65,6 @@ st.markdown("""
         font-size: 14px !important;
     }
     
-    .stMetric .metric-value {
-        color: white !important;
-        font-size: 32px !important;
-        font-weight: 700 !important;
-    }
-    
     h1 {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
@@ -100,12 +93,6 @@ st.markdown("""
         color: white;
         margin: 15px 0;
         box-shadow: 0 8px 20px rgba(240, 147, 251, 0.4);
-        animation: fadeIn 0.5s ease-in;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
     }
     
     .stTabs [data-baseweb="tab-list"] {
@@ -173,37 +160,34 @@ st.markdown("""
 # DATA LOADING
 # ============================================================================
 
-@st.cache_data(ttl=3600, show_spinner="✨ Loading magical data...")
+@st.cache_data(ttl=3600, show_spinner="✨ Loading data...")
 def load_and_preprocess_data():
     """Load and preprocess data"""
     try:
-        df = pd.read_csv(
-            'data/Mental_Health_and_Lifestyle_Research.csv',
-            dtype={
-                'Person_ID': 'int32',
-                'Age': 'int8',
-                'Gender': 'category',
-                'Hours_of_Sleep': 'float32',
-                'Stress_Level': 'int8',
-                'Physical_Activity': 'int16',
-                'Work_Hours_per_Day': 'float32',
-                'Mental_Health_Status': 'category',
-                'Social_Interaction_Freq': 'category',
-                'Overall_Wellbeing_Score': 'float32',
-                'Diet_Quality': 'category',
-                'Screen_Time_per_Day': 'float32',
-                'Substance_Use': 'category',
-                'Physical_Health_Condition': 'category'
-            }
-        )
-        
+        df = pd.read_csv('data/Mental_Health_and_Lifestyle_Research.csv')
         df.columns = df.columns.str.strip()
         
+        # Handle missing values
         categorical_cols = ['Mental_Health_Status', 'Substance_Use', 'Physical_Health_Condition']
         for col in categorical_cols:
             if col in df.columns:
-                df[col] = df[col].cat.add_categories(['Unknown']).fillna('Unknown')
+                df[col] = df[col].fillna('Unknown').astype(str)
         
+        # Convert numeric columns
+        numeric_cols = ['Age', 'Hours_of_Sleep', 'Stress_Level', 'Physical_Activity', 
+                        'Work_Hours_per_Day', 'Overall_Wellbeing_Score', 'Screen_Time_per_Day']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Handle categorical as strings (not category dtype to avoid issues)
+        string_cols = ['Gender', 'Mental_Health_Status', 'Social_Interaction_Freq', 
+                      'Diet_Quality', 'Substance_Use', 'Physical_Health_Condition']
+        for col in string_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
+        
+        # Handle boolean
         if 'Has_Close_Friends' in df.columns:
             df['Has_Close_Friends'] = df['Has_Close_Friends'].astype(str).str.lower().map({
                 'true': True, 'false': False
@@ -212,10 +196,10 @@ def load_and_preprocess_data():
         return df
         
     except FileNotFoundError:
-        st.error("❌ CSV file not found")
+        st.error("❌ CSV file not found at 'data/Mental_Health_and_Lifestyle_Research.csv'")
         st.stop()
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
+        st.error(f"❌ Error loading data: {str(e)}")
         st.stop()
 
 def apply_filters(df, filters):
@@ -248,7 +232,7 @@ def apply_filters(df, filters):
 # ============================================================================
 
 def create_sidebar(df):
-    """Create magical sidebar"""
+    """Create sidebar"""
     st.sidebar.markdown("# 🎛️ Control Panel")
     st.sidebar.markdown("---")
     
@@ -257,29 +241,31 @@ def create_sidebar(df):
     with st.sidebar.expander("👥 Demographics", expanded=True):
         age_min, age_max = int(df['Age'].min()), int(df['Age'].max())
         filters['age_range'] = st.slider("Age Range", age_min, age_max, (age_min, age_max))
-        filters['gender'] = st.multiselect("Gender", df['Gender'].cat.categories.tolist(), 
-                                          df['Gender'].cat.categories.tolist())
+        filters['gender'] = st.multiselect("Gender", 
+                                          sorted(df['Gender'].unique().tolist()), 
+                                          sorted(df['Gender'].unique().tolist()))
     
     with st.sidebar.expander("🧠 Mental Health"):
         filters['mental_health'] = st.multiselect("Status", 
-                                                  df['Mental_Health_Status'].cat.categories.tolist(),
-                                                  df['Mental_Health_Status'].cat.categories.tolist())
+                                                  sorted(df['Mental_Health_Status'].unique().tolist()),
+                                                  sorted(df['Mental_Health_Status'].unique().tolist()))
     
     with st.sidebar.expander("🍎 Lifestyle"):
-        filters['diet_quality'] = st.multiselect("Diet", df['Diet_Quality'].cat.categories.tolist(),
-                                                df['Diet_Quality'].cat.categories.tolist())
+        filters['diet_quality'] = st.multiselect("Diet", 
+                                                sorted(df['Diet_Quality'].unique().tolist()),
+                                                sorted(df['Diet_Quality'].unique().tolist()))
         filters['social_interaction'] = st.multiselect("Social", 
-                                                      df['Social_Interaction_Freq'].cat.categories.tolist(),
-                                                      df['Social_Interaction_Freq'].cat.categories.tolist())
+                                                      sorted(df['Social_Interaction_Freq'].unique().tolist()),
+                                                      sorted(df['Social_Interaction_Freq'].unique().tolist()))
         filters['has_friends'] = st.selectbox("Friends", ['All', 'True', 'False'])
         filters['substance_use'] = st.multiselect("Substance", 
-                                                  df['Substance_Use'].cat.categories.tolist(),
-                                                  df['Substance_Use'].cat.categories.tolist())
+                                                  sorted(df['Substance_Use'].unique().tolist()),
+                                                  sorted(df['Substance_Use'].unique().tolist()))
     
     with st.sidebar.expander("🏥 Physical Health"):
         filters['physical_health'] = st.multiselect("Condition", 
-                                                    df['Physical_Health_Condition'].cat.categories.tolist(),
-                                                    df['Physical_Health_Condition'].cat.categories.tolist())
+                                                    sorted(df['Physical_Health_Condition'].unique().tolist()),
+                                                    sorted(df['Physical_Health_Condition'].unique().tolist()))
     
     st.sidebar.markdown("---")
     if st.sidebar.button("🔄 Reset Filters", use_container_width=True):
@@ -288,11 +274,11 @@ def create_sidebar(df):
     return filters
 
 # ============================================================================
-# MAGICAL KPI CARDS
+# KPI CARDS
 # ============================================================================
 
-def display_magical_kpis(df):
-    """Display animated KPI cards"""
+def display_kpis(df):
+    """Display KPI cards"""
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
@@ -325,20 +311,20 @@ def display_magical_kpis(df):
         st.metric("👥 Friends", f"{pct_friends:.0f}%")
 
 # ============================================================================
-# PAGE 1: OVERVIEW WITH MAGICAL CHARTS
+# PAGE 1: OVERVIEW
 # ============================================================================
 
 def page_overview(df):
-    """Overview with stunning visualizations"""
+    """Overview page"""
     st.markdown("# 📊 Executive Dashboard")
     st.markdown(f"<p style='text-align: center; color: #666; font-size: 1.1rem;'>Analyzing <strong>{len(df):,}</strong> individuals</p>", 
                 unsafe_allow_html=True)
     
-    display_magical_kpis(df)
+    display_kpis(df)
     st.markdown("---")
     
     # Gauge Charts
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns(2)
     
     with col1:
         avg_wellbeing = df['Overall_Wellbeing_Score'].mean()
@@ -377,8 +363,7 @@ def page_overview(df):
         )
         
         st.plotly_chart(fig, use_container_width=True, key="gauge_wellbeing")
-        st.markdown("<p style='text-align: center; color: #666;'>🎯 <strong>Target:</strong> 7+ for optimal wellbeing</p>", 
-                   unsafe_allow_html=True)
+        st.caption("🎯 Target: 7+ for optimal wellbeing")
     
     with col2:
         avg_stress = df['Stress_Level'].mean()
@@ -417,16 +402,14 @@ def page_overview(df):
         )
         
         st.plotly_chart(fig, use_container_width=True, key="gauge_stress")
-        st.markdown("<p style='text-align: center; color: #666;'>✅ <strong>Target:</strong> Below 5 for healthy stress</p>", 
-                   unsafe_allow_html=True)
+        st.caption("✅ Target: Below 5 for healthy stress")
     
     st.markdown("---")
     
     # Sunburst Chart
     st.markdown("### 🌅 Mental Health Landscape")
     
-    sunburst_data = df.groupby(['Gender', 'Social_Interaction_Freq', 'Mental_Health_Status'], 
-                                observed=True).size().reset_index(name='count')
+    sunburst_data = df.groupby(['Gender', 'Social_Interaction_Freq', 'Mental_Health_Status']).size().reset_index(name='count')
     
     fig = px.sunburst(
         sunburst_data,
@@ -445,8 +428,7 @@ def page_overview(df):
     )
     
     st.plotly_chart(fig, use_container_width=True, key="sunburst_mental")
-    st.markdown("<p style='text-align: center; color: #666;'>💡 <strong>Insight:</strong> Click on segments to drill down</p>", 
-               unsafe_allow_html=True)
+    st.caption("💡 Click on segments to drill down into specific groups")
     
     st.markdown("---")
     
@@ -456,16 +438,18 @@ def page_overview(df):
     with col3:
         fig = go.Figure()
         
-        for diet in df['Diet_Quality'].cat.categories:
+        diet_categories = sorted(df['Diet_Quality'].unique())
+        colors = px.colors.qualitative.Set2
+        
+        for idx, diet in enumerate(diet_categories):
             diet_data = df[df['Diet_Quality'] == diet]['Overall_Wellbeing_Score']
             fig.add_trace(go.Violin(
                 y=diet_data,
                 name=diet,
                 box_visible=True,
                 meanline_visible=True,
-                fillcolor='rgba(102, 126, 234, 0.5)',
-                line_color='#667eea',
-                opacity=0.8
+                fillcolor=colors[idx % len(colors)],
+                opacity=0.6
             ))
         
         fig.update_layout(
@@ -473,26 +457,28 @@ def page_overview(df):
             yaxis_title='Wellbeing Score',
             xaxis_title='Diet Quality',
             height=400,
-            showlegend=False,
+            showlegend=True,
             font={'family': 'Poppins'},
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
+            plot_bgcolor='rgba(250,250,250,1)'
         )
         
         st.plotly_chart(fig, use_container_width=True, key="violin_diet")
-        st.markdown("<p style='text-align: center; color: #666;'>🍎 Wider = more people at that level</p>", 
-                   unsafe_allow_html=True)
+        st.caption("🍎 Wider shapes indicate more people at that wellbeing level")
     
     with col4:
+        sample_size = min(500, len(df))
+        df_sample = df.sample(sample_size) if len(df) > sample_size else df
+        
         fig = px.scatter_3d(
-            df.sample(min(500, len(df))),
+            df_sample,
             x='Age',
             y='Hours_of_Sleep',
             z='Overall_Wellbeing_Score',
             color='Stress_Level',
             size='Physical_Activity',
             color_continuous_scale='Viridis',
-            title='3D: Age, Sleep & Wellbeing',
+            title=f'3D View: Age, Sleep & Wellbeing (n={sample_size})',
             labels={'Age': 'Age', 'Hours_of_Sleep': 'Sleep (hrs)', 
                    'Overall_Wellbeing_Score': 'Wellbeing'}
         )
@@ -505,8 +491,7 @@ def page_overview(df):
         )
         
         st.plotly_chart(fig, use_container_width=True, key="3d_scatter")
-        st.markdown("<p style='text-align: center; color: #666;'>🔄 Drag to rotate</p>", 
-                   unsafe_allow_html=True)
+        st.caption("🔄 Drag to rotate | Scroll to zoom")
     
     # Insights
     st.markdown("---")
@@ -514,29 +499,34 @@ def page_overview(df):
     
     avg_wb = df['Overall_Wellbeing_Score'].mean()
     avg_stress = df['Stress_Level'].mean()
-    best_diet = df.groupby('Diet_Quality', observed=True)['Overall_Wellbeing_Score'].mean().idxmax()
+    avg_sleep = df['Hours_of_Sleep'].mean()
+    
+    # Find best diet safely
+    diet_wellbeing = df.groupby('Diet_Quality')['Overall_Wellbeing_Score'].mean()
+    best_diet = diet_wellbeing.idxmax() if len(diet_wellbeing) > 0 else "N/A"
     
     insights_html = f"""
     <div class="insight-box">
-        <h3 style="color: white; margin-top: 0;">📊 Current Insights</h3>
+        <h3 style="color: white; margin-top: 0;">📊 Current Population Insights</h3>
         <ul style="font-size: 1.05rem; line-height: 1.8;">
-            <li><strong>Wellbeing:</strong> {avg_wb:.1f}/10 - {'🟢 Excellent' if avg_wb >= 7 else '🟡 Good' if avg_wb >= 5 else '🔴 Needs Attention'}</li>
-            <li><strong>Stress:</strong> {avg_stress:.1f}/10 - {'🔴 High' if avg_stress >= 7 else '🟡 Moderate' if avg_stress >= 5 else '🟢 Healthy'}</li>
-            <li><strong>Best Diet:</strong> {best_diet} shows highest wellbeing</li>
-            <li><strong>Sample:</strong> {len(df)} people analyzed</li>
+            <li><strong>Wellbeing Status:</strong> {avg_wb:.1f}/10 - {'🟢 Excellent' if avg_wb >= 7 else '🟡 Good' if avg_wb >= 5 else '🔴 Needs Attention'}</li>
+            <li><strong>Stress Level:</strong> {avg_stress:.1f}/10 - {'🔴 High Alert' if avg_stress >= 7 else '🟡 Moderate' if avg_stress >= 5 else '🟢 Healthy'}</li>
+            <li><strong>Sleep Pattern:</strong> {avg_sleep:.1f} hours - {'Below recommended' if avg_sleep < 7 else 'Adequate'}</li>
+            <li><strong>Best Diet for Wellbeing:</strong> {best_diet}</li>
+            <li><strong>Sample Size:</strong> {len(df)} people analyzed</li>
         </ul>
     </div>
     """
     st.markdown(insights_html, unsafe_allow_html=True)
 
 # ============================================================================
-# PAGE 2: LIFESTYLE ANALYSIS
+# PAGE 2: LIFESTYLE
 # ============================================================================
 
 def page_lifestyle(df):
-    """Advanced lifestyle analysis"""
+    """Lifestyle analysis"""
     st.markdown("# 🏃 Lifestyle Intelligence")
-    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Discover hidden patterns</p>", 
+    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Discover hidden patterns in lifestyle choices</p>", 
                 unsafe_allow_html=True)
     
     # Bubble Chart
@@ -548,15 +538,15 @@ def page_lifestyle(df):
         y='Overall_Wellbeing_Score',
         size='Physical_Activity',
         color='Stress_Level',
-        hover_data=['Age', 'Hours_of_Sleep'],
+        hover_data=['Age', 'Hours_of_Sleep', 'Work_Hours_per_Day'],
         color_continuous_scale='RdYlGn_r',
-        title='Screen Time vs Wellbeing',
-        labels={'Screen_Time_per_Day': 'Screen Time (hrs)', 
-               'Overall_Wellbeing_Score': 'Wellbeing'},
+        title='Screen Time vs Wellbeing (Bubble size = Physical Activity)',
+        labels={'Screen_Time_per_Day': 'Screen Time (hours/day)', 
+               'Overall_Wellbeing_Score': 'Wellbeing Score'},
         size_max=30
     )
     
-    # Trendline
+    # Add trendline
     z = np.polyfit(df['Screen_Time_per_Day'], df['Overall_Wellbeing_Score'], 1)
     p = np.poly1d(z)
     x_trend = np.linspace(df['Screen_Time_per_Day'].min(), df['Screen_Time_per_Day'].max(), 100)
@@ -565,7 +555,7 @@ def page_lifestyle(df):
         x=x_trend,
         y=p(x_trend),
         mode='lines',
-        name='Trend',
+        name='Trend Line',
         line=dict(color='red', width=3, dash='dash')
     ))
     
@@ -573,26 +563,35 @@ def page_lifestyle(df):
         height=500,
         font={'family': 'Poppins'},
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(250,250,250,1)'
+        plot_bgcolor='rgba(250,250,250,1)',
+        hovermode='closest'
     )
     
     st.plotly_chart(fig, use_container_width=True, key="bubble_screen")
     
     corr = df[['Screen_Time_per_Day', 'Overall_Wellbeing_Score']].corr().iloc[0, 1]
-    st.markdown(f"<p style='text-align: center; color: #666;'>📊 Correlation: {corr:.3f}</p>", 
-               unsafe_allow_html=True)
+    st.caption(f"📊 Correlation: {corr:.3f} - {'Negative relationship' if corr < -0.1 else 'Positive relationship' if corr > 0.1 else 'Weak relationship'}")
     
     st.markdown("---")
     
     # Parallel Coordinates
-    st.markdown("### 🌈 Multi-Dimensional Patterns")
+    st.markdown("### 🌈 Multi-Dimensional Lifestyle Patterns")
     
-    parallel_df = df[['Age', 'Hours_of_Sleep', 'Stress_Level', 'Physical_Activity', 
-                      'Work_Hours_per_Day', 'Screen_Time_per_Day', 'Overall_Wellbeing_Score']].copy()
+    # Prepare normalized data for parallel coordinates
+    parallel_cols = ['Age', 'Hours_of_Sleep', 'Stress_Level', 'Physical_Activity', 
+                     'Work_Hours_per_Day', 'Screen_Time_per_Day', 'Overall_Wellbeing_Score']
     
+    parallel_df = df[parallel_cols].copy()
+    
+    # Normalize all columns to 0-10 scale
     for col in parallel_df.columns:
         if col != 'Overall_Wellbeing_Score':
-            parallel_df[col] = (parallel_df[col] - parallel_df[col].min()) / (parallel_df[col].max() - parallel_df[col].min()) * 10
+            col_min = parallel_df[col].min()
+            col_max = parallel_df[col].max()
+            if col_max > col_min:
+                parallel_df[col] = (parallel_df[col] - col_min) / (col_max - col_min) * 10
+            else:
+                parallel_df[col] = 5  # Default middle value if no variance
     
     fig = go.Figure(data=
         go.Parcoords(
@@ -616,15 +615,14 @@ def page_lifestyle(df):
     )
     
     fig.update_layout(
-        title='Parallel Coordinates: Lifestyle Factors',
+        title='Parallel Coordinates: Lifestyle Factors (Color = Wellbeing)',
         height=500,
         font={'family': 'Poppins', 'size': 12},
         paper_bgcolor='rgba(0,0,0,0)'
     )
     
     st.plotly_chart(fig, use_container_width=True, key="parallel_coords")
-    st.markdown("<p style='text-align: center; color: #666;'>💡 Drag on axes to filter</p>", 
-               unsafe_allow_html=True)
+    st.caption("💡 Drag on axes to filter | Green lines = high wellbeing | Red lines = low wellbeing")
     
     st.markdown("---")
     
@@ -639,13 +637,22 @@ def page_lifestyle(df):
         if len(high_wb) > 0:
             categories = ['Sleep', 'Low Stress', 'Activity', 'Social', 'Diet']
             
-            high_values = [
-                high_wb['Hours_of_Sleep'].mean() / 9 * 10,
-                (10 - high_wb['Stress_Level'].mean()),
-                high_wb['Physical_Activity'].mean() / high_wb['Physical_Activity'].max() * 10,
-                (high_wb['Social_Interaction_Freq'].map({'Low': 3, 'Moderate': 6, 'High': 10}).mean()),
-                (high_wb['Diet_Quality'].map({'Poor': 2, 'Fair': 4, 'Good': 6, 'Very Good': 8, 'Excellent': 10}).mean())
-            ]
+            # Calculate values safely
+            sleep_val = (high_wb['Hours_of_Sleep'].mean() / 9) * 10
+            stress_val = 10 - high_wb['Stress_Level'].mean()
+            activity_val = (high_wb['Physical_Activity'].mean() / df['Physical_Activity'].max()) * 10 if df['Physical_Activity'].max() > 0 else 5
+            
+            # Map social interaction to numeric
+            social_map = {'Low': 3, 'Moderate': 6, 'High': 10}
+            social_numeric = high_wb['Social_Interaction_Freq'].map(social_map)
+            social_val = social_numeric.mean() if not social_numeric.isna().all() else 5
+            
+            # Map diet quality to numeric
+            diet_map = {'Poor': 2, 'Fair': 4, 'Good': 6, 'Very Good': 8, 'Excellent': 10}
+            diet_numeric = high_wb['Diet_Quality'].map(diet_map)
+            diet_val = diet_numeric.mean() if not diet_numeric.isna().all() else 5
+            
+            high_values = [sleep_val, stress_val, activity_val, social_val, diet_val]
             
             fig = go.Figure()
             
@@ -653,7 +660,7 @@ def page_lifestyle(df):
                 r=high_values,
                 theta=categories,
                 fill='toself',
-                name='High Wellbeing',
+                name='High Wellbeing (7+)',
                 line_color='#4CAF50',
                 fillcolor='rgba(76, 175, 80, 0.3)'
             ))
@@ -668,18 +675,27 @@ def page_lifestyle(df):
             )
             
             st.plotly_chart(fig, use_container_width=True, key="radar_high")
+        else:
+            st.info("Not enough data for high wellbeing profile")
     
     with col2:
         low_wb = df[df['Overall_Wellbeing_Score'] < 5]
         
         if len(low_wb) > 0:
-            low_values = [
-                low_wb['Hours_of_Sleep'].mean() / 9 * 10,
-                (10 - low_wb['Stress_Level'].mean()),
-                low_wb['Physical_Activity'].mean() / low_wb['Physical_Activity'].max() * 10,
-                (low_wb['Social_Interaction_Freq'].map({'Low': 3, 'Moderate': 6, 'High': 10}).mean()),
-                (low_wb['Diet_Quality'].map({'Poor': 2, 'Fair': 4, 'Good': 6, 'Very Good': 8, 'Excellent': 10}).mean())
-            ]
+            # Calculate values safely
+            sleep_val = (low_wb['Hours_of_Sleep'].mean() / 9) * 10
+            stress_val = 10 - low_wb['Stress_Level'].mean()
+            activity_val = (low_wb['Physical_Activity'].mean() / df['Physical_Activity'].max()) * 10 if df['Physical_Activity'].max() > 0 else 5
+            
+            # Map social interaction
+            social_numeric = low_wb['Social_Interaction_Freq'].map(social_map)
+            social_val = social_numeric.mean() if not social_numeric.isna().all() else 5
+            
+            # Map diet quality
+            diet_numeric = low_wb['Diet_Quality'].map(diet_map)
+            diet_val = diet_numeric.mean() if not diet_numeric.isna().all() else 5
+            
+            low_values = [sleep_val, stress_val, activity_val, social_val, diet_val]
             
             fig = go.Figure()
             
@@ -687,7 +703,7 @@ def page_lifestyle(df):
                 r=low_values,
                 theta=categories,
                 fill='toself',
-                name='Low Wellbeing',
+                name='Low Wellbeing (<5)',
                 line_color='#F44336',
                 fillcolor='rgba(244, 67, 54, 0.3)'
             ))
@@ -702,11 +718,15 @@ def page_lifestyle(df):
             )
             
             st.plotly_chart(fig, use_container_width=True, key="radar_low")
+        else:
+            st.info("Not enough data for low wellbeing profile")
+    
+    st.caption("📊 Larger area = better lifestyle factors")
     
     st.markdown("---")
     
     # Heatmap
-    st.markdown("### ⏰ Sleep vs Work Hours Impact")
+    st.markdown("### ⏰ Sleep vs Work Hours Impact Matrix")
     
     df_temp = df.copy()
     df_temp['Sleep_Bin'] = pd.cut(df_temp['Hours_of_Sleep'], bins=5, labels=['Very Low', 'Low', 'Medium', 'Good', 'Excellent'])
@@ -714,50 +734,65 @@ def page_lifestyle(df):
     
     heatmap_data = df_temp.groupby(['Sleep_Bin', 'Work_Bin'], observed=True)['Overall_Wellbeing_Score'].mean().unstack()
     
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_data.values,
-        x=heatmap_data.columns,
-        y=heatmap_data.index,
-        colorscale='RdYlGn',
-        text=heatmap_data.values.round(2),
-        texttemplate='%{text}',
-        textfont={"size": 14},
-        colorbar=dict(title="Wellbeing")
-    ))
-    
-    fig.update_layout(
-        title='Wellbeing by Sleep & Work Hours',
-        xaxis_title='Work Hours',
-        yaxis_title='Sleep Quality',
-        height=400,
-        font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True, key="heatmap_sleep_work")
+    if not heatmap_data.empty:
+        fig = go.Figure(data=go.Heatmap(
+            z=heatmap_data.values,
+            x=heatmap_data.columns,
+            y=heatmap_data.index,
+            colorscale='RdYlGn',
+            text=np.round(heatmap_data.values, 2),
+            texttemplate='%{text}',
+            textfont={"size": 14},
+            colorbar=dict(title="Wellbeing")
+        ))
+        
+        fig.update_layout(
+            title='Average Wellbeing by Sleep & Work Hours',
+            xaxis_title='Work Hours per Day',
+            yaxis_title='Sleep Quality',
+            height=400,
+            font={'family': 'Poppins'},
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, key="heatmap_sleep_work")
+        st.caption("🟢 Green = High wellbeing | 🔴 Red = Low wellbeing")
+    else:
+        st.info("Not enough data for heatmap visualization")
 
 # ============================================================================
-# PAGE 3: SEGMENT ANALYSIS
+# PAGE 3: SEGMENTS
 # ============================================================================
 
 def page_segments(df):
-    """Advanced segment analysis"""
+    """Segment analysis"""
     st.markdown("# 🔍 Segment Intelligence")
-    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Deep dive into segments</p>", 
+    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Deep dive into population segments</p>", 
                 unsafe_allow_html=True)
     
     # Waterfall Chart
-    st.markdown("### 💧 Wellbeing Contributors")
+    st.markdown("### 💧 Wellbeing Contributors Analysis")
     
     baseline = df['Overall_Wellbeing_Score'].mean()
     
     factors = {}
     factors['Baseline'] = baseline
-    factors['Good Sleep'] = df[df['Hours_of_Sleep'] >= 7]['Overall_Wellbeing_Score'].mean() - baseline
-    factors['Low Stress'] = df[df['Stress_Level'] < 5]['Overall_Wellbeing_Score'].mean() - baseline
-    factors['Has Friends'] = df[df['Has_Close_Friends'] == True]['Overall_Wellbeing_Score'].mean() - baseline
-    factors['High Activity'] = df[df['Physical_Activity'] > df['Physical_Activity'].median()]['Overall_Wellbeing_Score'].mean() - baseline
-    factors['Good Diet'] = df[df['Diet_Quality'].isin(['Excellent', 'Very Good'])]['Overall_Wellbeing_Score'].mean() - baseline
+    
+    # Calculate impacts safely
+    good_sleep = df[df['Hours_of_Sleep'] >= 7]
+    factors['Good Sleep (7+h)'] = good_sleep['Overall_Wellbeing_Score'].mean() - baseline if len(good_sleep) > 0 else 0
+    
+    low_stress = df[df['Stress_Level'] < 5]
+    factors['Low Stress (<5)'] = low_stress['Overall_Wellbeing_Score'].mean() - baseline if len(low_stress) > 0 else 0
+    
+    has_friends = df[df['Has_Close_Friends'] == True]
+    factors['Has Friends'] = has_friends['Overall_Wellbeing_Score'].mean() - baseline if len(has_friends) > 0 else 0
+    
+    high_activity = df[df['Physical_Activity'] > df['Physical_Activity'].median()]
+    factors['High Activity'] = high_activity['Overall_Wellbeing_Score'].mean() - baseline if len(high_activity) > 0 else 0
+    
+    good_diet = df[df['Diet_Quality'].isin(['Excellent', 'Very Good'])]
+    factors['Good Diet'] = good_diet['Overall_Wellbeing_Score'].mean() - baseline if len(good_diet) > 0 else 0
     
     fig = go.Figure(go.Waterfall(
         name="Wellbeing",
@@ -774,39 +809,44 @@ def page_segments(df):
     ))
     
     fig.update_layout(
-        title="Impact of Lifestyle Factors",
+        title="Impact of Lifestyle Factors on Wellbeing",
         showlegend=False,
         height=450,
         font={'family': 'Poppins'},
         paper_bgcolor='rgba(0,0,0,0)',
-        yaxis_title="Wellbeing Impact"
+        yaxis_title="Wellbeing Score Impact"
     )
     
     st.plotly_chart(fig, use_container_width=True, key="waterfall_wellbeing")
+    st.caption("📊 Shows how each factor contributes to overall wellbeing")
     
     st.markdown("---")
     
     # Box Plots
-    st.markdown("### 📦 Statistical Comparison")
+    st.markdown("### 📦 Statistical Comparison: Gender & Friendship Impact")
     
     col1, col2 = st.columns(2)
     
     with col1:
         fig = go.Figure()
         
-        for gender in df['Gender'].cat.categories:
+        genders = sorted(df['Gender'].unique())
+        colors = ['#667eea', '#f5576c', '#4CAF50', '#FFC107']
+        
+        for idx, gender in enumerate(genders):
             gender_data = df[df['Gender'] == gender]['Overall_Wellbeing_Score']
             fig.add_trace(go.Box(
                 y=gender_data,
                 name=gender,
                 boxmean='sd',
-                marker_color='#667eea' if gender == df['Gender'].cat.categories[0] else '#f5576c'
+                marker_color=colors[idx % len(colors)]
             ))
         
         fig.update_layout(
-            title='Wellbeing by Gender',
+            title='Wellbeing Distribution by Gender',
             yaxis_title='Wellbeing Score',
             height=400,
+            showlegend=True,
             font={'family': 'Poppins'},
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(250,250,250,1)'
@@ -820,19 +860,21 @@ def page_segments(df):
         df_temp = df.copy()
         df_temp['Friends_Label'] = df_temp['Has_Close_Friends'].map({True: 'Has Friends', False: 'No Friends'})
         
-        for friend_status in ['Has Friends', 'No Friends']:
+        for idx, friend_status in enumerate(['Has Friends', 'No Friends']):
             friend_data = df_temp[df_temp['Friends_Label'] == friend_status]['Overall_Wellbeing_Score']
-            fig.add_trace(go.Box(
-                y=friend_data,
-                name=friend_status,
-                boxmean='sd',
-                marker_color='#4CAF50' if friend_status == 'Has Friends' else '#F44336'
-            ))
+            if len(friend_data) > 0:
+                fig.add_trace(go.Box(
+                    y=friend_data,
+                    name=friend_status,
+                    boxmean='sd',
+                    marker_color='#4CAF50' if friend_status == 'Has Friends' else '#F44336'
+                ))
         
         fig.update_layout(
-            title='Wellbeing by Friendship',
+            title='Wellbeing Distribution by Friendship Status',
             yaxis_title='Wellbeing Score',
             height=400,
+            showlegend=True,
             font={'family': 'Poppins'},
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(250,250,250,1)'
@@ -840,46 +882,74 @@ def page_segments(df):
         
         st.plotly_chart(fig, use_container_width=True, key="box_friends")
     
+    st.caption("📊 Box shows middle 50% | Line = median | Diamond = mean")
+    
     st.markdown("---")
     
-    # Segment Tables
-    st.markdown("### 🏆 Top Segments")
+    # Segment Performance Tables
+    st.markdown("### 🏆 Top & Bottom Performing Segments")
     
     col3, col4 = st.columns(2)
     
     with col3:
-        st.markdown("#### 🌟 Highest Wellbeing")
+        st.markdown("#### 🌟 Highest Wellbeing Segments")
         
         segments = []
-        for gender in df['Gender'].cat.categories:
+        
+        # By Gender
+        for gender in df['Gender'].unique():
             subset = df[df['Gender'] == gender]
-            segments.append({
-                'Segment': f'Gender: {gender}',
-                'Avg Wellbeing': subset['Overall_Wellbeing_Score'].mean(),
-                'Count': len(subset)
-            })
+            if len(subset) > 0:
+                segments.append({
+                    'Segment': f'Gender: {gender}',
+                    'Avg Wellbeing': subset['Overall_Wellbeing_Score'].mean(),
+                    'Count': len(subset),
+                    'Avg Stress': subset['Stress_Level'].mean()
+                })
         
-        segments_df = pd.DataFrame(segments).sort_values('Avg Wellbeing', ascending=False)
-        segments_df['Avg Wellbeing'] = segments_df['Avg Wellbeing'].round(2)
+        # By Social Interaction
+        for social in df['Social_Interaction_Freq'].unique():
+            subset = df[df['Social_Interaction_Freq'] == social]
+            if len(subset) > 0:
+                segments.append({
+                    'Segment': f'Social: {social}',
+                    'Avg Wellbeing': subset['Overall_Wellbeing_Score'].mean(),
+                    'Count': len(subset),
+                    'Avg Stress': subset['Stress_Level'].mean()
+                })
         
-        st.dataframe(segments_df, hide_index=True, use_container_width=True)
+        # By Friends
+        for friends in [True, False]:
+            subset = df[df['Has_Close_Friends'] == friends]
+            if len(subset) > 0:
+                label = 'Has Friends' if friends else 'No Friends'
+                segments.append({
+                    'Segment': label,
+                    'Avg Wellbeing': subset['Overall_Wellbeing_Score'].mean(),
+                    'Count': len(subset),
+                    'Avg Stress': subset['Stress_Level'].mean()
+                })
+        
+        if segments:
+            segments_df = pd.DataFrame(segments).sort_values('Avg Wellbeing', ascending=False).head(5)
+            segments_df['Avg Wellbeing'] = segments_df['Avg Wellbeing'].round(2)
+            segments_df['Avg Stress'] = segments_df['Avg Stress'].round(2)
+            
+            st.dataframe(segments_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No segment data available")
     
     with col4:
-        st.markdown("#### ⚠️ Highest Stress")
+        st.markdown("#### ⚠️ Highest Stress Segments")
         
-        segments_stress = []
-        for gender in df['Gender'].cat.categories:
-            subset = df[df['Gender'] == gender]
-            segments_stress.append({
-                'Segment': f'Gender: {gender}',
-                'Avg Stress': subset['Stress_Level'].mean(),
-                'Count': len(subset)
-            })
-        
-        segments_stress_df = pd.DataFrame(segments_stress).sort_values('Avg Stress', ascending=False)
-        segments_stress_df['Avg Stress'] = segments_stress_df['Avg Stress'].round(2)
-        
-        st.dataframe(segments_stress_df, hide_index=True, use_container_width=True)
+        if segments:
+            segments_stress_df = pd.DataFrame(segments).sort_values('Avg Stress', ascending=False).head(5)
+            segments_stress_df['Avg Wellbeing'] = segments_stress_df['Avg Wellbeing'].round(2)
+            segments_stress_df['Avg Stress'] = segments_stress_df['Avg Stress'].round(2)
+            
+            st.dataframe(segments_stress_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No segment data available")
 
 # ============================================================================
 # PAGE 4: CORRELATIONS
@@ -888,7 +958,7 @@ def page_segments(df):
 def page_correlations(df):
     """Correlation analysis"""
     st.markdown("# 📈 Correlation Intelligence")
-    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Discover relationships</p>", 
+    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Discover hidden relationships in the data</p>", 
                 unsafe_allow_html=True)
     
     numeric_cols = ['Age', 'Hours_of_Sleep', 'Stress_Level', 'Physical_Activity', 
@@ -896,17 +966,17 @@ def page_correlations(df):
     
     corr_df = df[numeric_cols].corr()
     
-    # Heatmap
+    # Interactive Correlation Heatmap
     fig = go.Figure(data=go.Heatmap(
         z=corr_df.values,
         x=corr_df.columns,
         y=corr_df.columns,
         colorscale='RdBu_r',
         zmid=0,
-        text=corr_df.values.round(2),
+        text=np.round(corr_df.values, 2),
         texttemplate='%{text}',
         textfont={"size": 12},
-        colorbar=dict(title="Correlation"),
+        colorbar=dict(title="Correlation", tickvals=[-1, -0.5, 0, 0.5, 1]),
         hovertemplate='%{x} vs %{y}<br>Correlation: %{z:.3f}<extra></extra>'
     ))
     
@@ -914,31 +984,34 @@ def page_correlations(df):
         title='Interactive Correlation Matrix',
         height=600,
         font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)'
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis={'side': 'bottom'},
+        yaxis={'side': 'left'}
     )
     
-    st.plotly_chart(fig, use_container_width=True, key="corr_heatmap")
+    st.plotly_chart(fig, use_container_width=True, key="corr_heatmap_advanced")
     
     st.markdown("""
     <div class="highlight-card">
-        <h4>📖 How to Read:</h4>
+        <h4>📖 How to Read This Heatmap:</h4>
         <ul>
-            <li><strong>+1 (Blue):</strong> Perfect positive correlation</li>
-            <li><strong>-1 (Red):</strong> Perfect negative correlation</li>
-            <li><strong>0 (White):</strong> No correlation</li>
+            <li><strong>+1 (Dark Blue):</strong> Perfect positive correlation - variables move together</li>
+            <li><strong>-1 (Dark Red):</strong> Perfect negative correlation - variables move opposite</li>
+            <li><strong>0 (White):</strong> No correlation - variables are independent</li>
+            <li><strong>Hover</strong> over cells to see exact correlation values</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Top Correlations
+    # Top Correlations Analysis
     st.markdown("### 🔝 Strongest Relationships")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### ✅ Positive")
+        st.markdown("#### ✅ Positive Correlations")
         
         corr_pairs = []
         for i in range(len(corr_df.columns)):
@@ -953,39 +1026,103 @@ def page_correlations(df):
         top_positive = corr_pairs_df.nlargest(5, 'Correlation')
         top_positive['Correlation'] = top_positive['Correlation'].round(3)
         
+        # Add interpretation
+        top_positive['Strength'] = top_positive['Correlation'].apply(
+            lambda x: '🟢 Strong' if abs(x) > 0.5 else '🟡 Moderate' if abs(x) > 0.3 else '⚪ Weak'
+        )
+        
         st.dataframe(top_positive, hide_index=True, use_container_width=True)
     
     with col2:
-        st.markdown("#### ⛔ Negative")
+        st.markdown("#### ⛔ Negative Correlations")
         
         top_negative = corr_pairs_df.nsmallest(5, 'Correlation')
         top_negative['Correlation'] = top_negative['Correlation'].round(3)
+        
+        top_negative['Strength'] = top_negative['Correlation'].apply(
+            lambda x: '🟢 Strong' if abs(x) > 0.5 else '🟡 Moderate' if abs(x) > 0.3 else '⚪ Weak'
+        )
         
         st.dataframe(top_negative, hide_index=True, use_container_width=True)
     
     st.markdown("---")
     
-    # Data Quality
-    st.markdown("### 🔍 Data Quality")
+    # Data Quality Dashboard
+    st.markdown("### 🔍 Data Quality Dashboard")
     
     col3, col4, col5, col6 = st.columns(4)
     
     with col3:
-        st.metric("📊 Records", f"{len(df):,}")
+        st.metric("📊 Total Records", f"{len(df):,}")
+    
     with col4:
-        st.metric("📈 Features", len(numeric_cols))
+        st.metric("📈 Numeric Features", len(numeric_cols))
+    
     with col5:
         completeness = ((df.size - df.isna().sum().sum()) / df.size) * 100
-        st.metric("✅ Complete", f"{completeness:.1f}%")
+        st.metric("✅ Completeness", f"{completeness:.1f}%")
+    
     with col6:
         memory_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
         st.metric("💾 Memory", f"{memory_mb:.1f} MB")
+    
+    # Missing values visualization
+    st.markdown("---")
+    st.markdown("### 🕳️ Missing Data Analysis")
+    
+    missing_data = []
+    for col in df.columns:
+        missing_count = df[col].isna().sum()
+        if col in ['Mental_Health_Status', 'Substance_Use', 'Physical_Health_Condition']:
+            unknown_count = (df[col] == 'Unknown').sum()
+            total_missing = missing_count + unknown_count
+        else:
+            total_missing = missing_count
+        
+        if total_missing > 0:
+            missing_data.append({
+                'Column': col,
+                'Missing': total_missing,
+                'Percentage': (total_missing / len(df)) * 100
+            })
+    
+    if missing_data:
+        missing_df = pd.DataFrame(missing_data).sort_values('Missing', ascending=False)
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Bar(
+            x=missing_df['Column'],
+            y=missing_df['Percentage'],
+            text=missing_df['Percentage'].round(1).astype(str) + '%',
+            textposition='outside',
+            marker=dict(
+                color=missing_df['Percentage'],
+                colorscale='Reds',
+                showscale=True,
+                colorbar=dict(title="% Missing")
+            )
+        ))
+        
+        fig.update_layout(
+            title='Missing Data by Column',
+            xaxis_title='Column',
+            yaxis_title='Percentage Missing (%)',
+            height=400,
+            font={'family': 'Poppins'},
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(250,250,250,1)'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, key="missing_data")
+    else:
+        st.success("✅ No missing data detected!")
 
 # ============================================================================
 # PAGE 5: ML PREDICTOR
 # ============================================================================
 
-@st.cache_resource(show_spinner="🤖 Training AI...")
+@st.cache_resource(show_spinner="🤖 Training AI model...")
 def train_ml_model(_df):
     """Train ML model"""
     df_ml = _df.copy()
@@ -1017,7 +1154,13 @@ def train_ml_model(_df):
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    model = RandomForestRegressor(n_estimators=30, max_depth=6, random_state=42, n_jobs=1)
+    model = RandomForestRegressor(
+        n_estimators=30,
+        max_depth=6,
+        random_state=42,
+        n_jobs=1,
+        max_features='sqrt'
+    )
     model.fit(X_train, y_train)
     
     y_pred = model.predict(X_test)
@@ -1030,25 +1173,28 @@ def train_ml_model(_df):
     return model, label_encoders, feature_cols, rmse, r2, y_test, y_pred
 
 def page_ml_predictor(df):
-    """ML predictor page"""
+    """ML prediction page"""
     st.markdown("# 🤖 AI Wellbeing Predictor")
-    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Powered by Machine Learning</p>", 
+    st.markdown("<p style='text-align: center; color: #666; font-size: 1.1rem;'>Powered by Random Forest Machine Learning</p>", 
                 unsafe_allow_html=True)
     
     model, label_encoders, feature_cols, rmse, r2, y_test, y_pred = train_ml_model(df)
     
-    # Performance
+    # Model Performance
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("🎯 R² Score", f"{r2:.3f}")
+        st.metric("🎯 R² Score", f"{r2:.3f}", help="Closer to 1 = better model")
+    
     with col2:
-        st.metric("📊 RMSE", f"{rmse:.3f}")
+        st.metric("📊 RMSE", f"{rmse:.3f}", help="Lower = better predictions")
+    
     with col3:
         accuracy = max(0, (1 - (rmse / df['Overall_Wellbeing_Score'].std())) * 100)
         st.metric("✅ Accuracy", f"{accuracy:.0f}%")
+    
     with col4:
-        st.metric("📈 Tests", f"{len(y_test)}")
+        st.metric("📈 Predictions", f"{len(y_test)}", help="Test set size")
     
     st.markdown("---")
     
@@ -1069,15 +1215,16 @@ def page_ml_predictor(df):
         marker=dict(
             color=feature_importance['Importance'],
             colorscale='Viridis',
-            showscale=True
+            showscale=True,
+            colorbar=dict(title="Importance")
         ),
         text=feature_importance['Importance'].round(3),
         textposition='outside'
     ))
     
     fig.update_layout(
-        title='Feature Importance',
-        xaxis_title='Importance',
+        title='Feature Importance: Which Factors Predict Wellbeing?',
+        xaxis_title='Importance Score',
         yaxis_title='Feature',
         height=500,
         font={'family': 'Poppins'},
@@ -1090,7 +1237,7 @@ def page_ml_predictor(df):
     st.markdown("---")
     
     # Actual vs Predicted
-    st.markdown("### 📊 Model Accuracy")
+    st.markdown("### 📊 Model Accuracy Visualization")
     
     col_chart1, col_chart2 = st.columns(2)
     
@@ -1102,7 +1249,14 @@ def page_ml_predictor(df):
             y=y_pred,
             mode='markers',
             name='Predictions',
-            marker=dict(size=8, color=y_test, colorscale='Viridis', opacity=0.6),
+            marker=dict(
+                size=8,
+                color=y_test,
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Actual Value"),
+                opacity=0.6
+            ),
             text=[f'Actual: {a:.2f}<br>Predicted: {p:.2f}' for a, p in zip(y_test, y_pred)],
             hovertemplate='%{text}<extra></extra>'
         ))
@@ -1113,18 +1267,19 @@ def page_ml_predictor(df):
             x=[min_val, max_val],
             y=[min_val, max_val],
             mode='lines',
-            name='Perfect',
+            name='Perfect Prediction',
             line=dict(color='red', width=2, dash='dash')
         ))
         
         fig.update_layout(
-            title='Actual vs Predicted',
-            xaxis_title='Actual',
-            yaxis_title='Predicted',
+            title='Actual vs Predicted Wellbeing',
+            xaxis_title='Actual Wellbeing Score',
+            yaxis_title='Predicted Wellbeing Score',
             height=400,
             font={'family': 'Poppins'},
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            plot_bgcolor='rgba(250,250,250,1)',
+            showlegend=True
         )
         
         st.plotly_chart(fig, use_container_width=True, key="actual_vs_pred")
@@ -1138,15 +1293,24 @@ def page_ml_predictor(df):
             x=y_pred,
             y=residuals,
             mode='markers',
-            marker=dict(size=8, color=np.abs(residuals), colorscale='Reds', opacity=0.6)
+            marker=dict(
+                size=8,
+                color=np.abs(residuals),
+                colorscale='Reds',
+                showscale=True,
+                colorbar=dict(title="Error Size"),
+                opacity=0.6
+            ),
+            text=[f'Predicted: {p:.2f}<br>Error: {r:.2f}' for p, r in zip(y_pred, residuals)],
+            hovertemplate='%{text}<extra></extra>'
         ))
         
-        fig.add_hline(y=0, line_dash="dash", line_color="green")
+        fig.add_hline(y=0, line_dash="dash", line_color="green", annotation_text="Perfect Prediction")
         
         fig.update_layout(
-            title='Prediction Errors',
-            xaxis_title='Predicted',
-            yaxis_title='Error',
+            title='Prediction Errors (Residuals)',
+            xaxis_title='Predicted Wellbeing Score',
+            yaxis_title='Prediction Error',
             height=400,
             font={'family': 'Poppins'},
             paper_bgcolor='rgba(0,0,0,0)',
@@ -1158,41 +1322,49 @@ def page_ml_predictor(df):
     st.markdown("---")
     
     # Interactive Predictor
-    st.markdown("### 🎮 Try the Predictor")
+    st.markdown("### 🎮 Try It Yourself: Predict Your Wellbeing")
+    st.markdown("**Enter your information below to get a personalized wellbeing prediction:**")
     
     with st.form("prediction_form"):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("**👤 Personal**")
+            st.markdown("**👤 Personal Info**")
             input_age = st.slider("Age", 20, 35, 27)
-            input_gender = st.selectbox("Gender", df['Gender'].cat.categories.tolist())
-            input_friends = st.selectbox("Friends?", ['Yes', 'No'])
+            input_gender = st.selectbox("Gender", sorted(df['Gender'].unique().tolist()))
+            input_friends = st.selectbox("Have Close Friends?", ['Yes', 'No'])
         
         with col2:
-            st.markdown("**😴 Health**")
-            input_sleep = st.slider("Sleep", 5.0, 9.0, 7.0, 0.5)
-            input_stress = st.slider("Stress", 1, 10, 5)
-            input_activity = st.slider("Activity", 
+            st.markdown("**😴 Health & Lifestyle**")
+            input_sleep = st.slider("Hours of Sleep", 5.0, 9.0, 7.0, 0.5)
+            input_stress = st.slider("Stress Level (1-10)", 1, 10, 5)
+            input_activity = st.slider("Physical Activity Score", 
                                       int(df['Physical_Activity'].min()), 
                                       int(df['Physical_Activity'].max()), 
                                       int(df['Physical_Activity'].mean()))
         
         with col3:
-            st.markdown("**💼 Lifestyle**")
-            input_work = st.slider("Work", 5.0, 11.0, 8.0, 0.5)
-            input_screen = st.slider("Screen", 0.0, 12.0, 4.0, 0.5)
-            input_diet = st.selectbox("Diet", df['Diet_Quality'].cat.categories.tolist())
+            st.markdown("**💼 Work & Screen**")
+            input_work = st.slider("Work Hours per Day", 5.0, 11.0, 8.0, 0.5)
+            input_screen = st.slider("Screen Time (hours/day)", 0.0, 12.0, 4.0, 0.5)
+            input_diet = st.selectbox("Diet Quality", sorted(df['Diet_Quality'].unique().tolist()))
         
         col4, col5 = st.columns(2)
+        
         with col4:
-            input_social = st.selectbox("Social", df['Social_Interaction_Freq'].cat.categories.tolist())
+            input_social = st.selectbox("Social Interaction Frequency", 
+                                       sorted(df['Social_Interaction_Freq'].unique().tolist()))
+        
         with col5:
-            input_substance = st.selectbox("Substance", df['Substance_Use'].cat.categories.tolist())
+            input_substance = st.selectbox("Substance Use", 
+                                          sorted(df['Substance_Use'].unique().tolist()))
         
-        input_physical = st.selectbox("Physical Health", df['Physical_Health_Condition'].cat.categories.tolist())
+        input_physical = st.selectbox("Physical Health Condition", 
+                                     sorted(df['Physical_Health_Condition'].unique().tolist()))
         
-        submitted = st.form_submit_button("🔮 Predict", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("🔮 Predict My Wellbeing Score", 
+                                         type="primary", 
+                                         use_container_width=True)
     
     if submitted:
         input_data = {
@@ -1214,7 +1386,7 @@ def page_ml_predictor(df):
         prediction = model.predict(input_df)[0]
         
         st.markdown("---")
-        st.markdown("### 🎯 Your Prediction")
+        st.markdown("### 🎯 Your Predicted Wellbeing Score")
         
         if prediction >= 7:
             color, status, emoji = "#4CAF50", "Excellent", "🌟"
@@ -1226,51 +1398,78 @@ def page_ml_predictor(df):
         st.markdown(f"""
         <div style='text-align: center; padding: 40px; 
                     background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
-                    border-radius: 20px; border: 4px solid {color}; margin: 20px 0;'>
-            <h1 style='font-size: 72px; margin: 0; color: {color};'>{prediction:.1f}</h1>
-            <p style='font-size: 20px; color: #666; margin: 10px 0;'>out of 10</p>
-            <h2 style='margin: 15px 0; color: {color};'>{emoji} {status}</h2>
+                    border-radius: 20px; border: 4px solid {color}; margin: 20px 0;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);'>
+            <h1 style='font-size: 72px; margin: 0; color: {color}; 
+                       text-shadow: 2px 2px 4px rgba(0,0,0,0.1);'>{prediction:.1f}</h1>
+            <p style='font-size: 20px; color: #666; margin: 10px 0; font-weight: 600;'>out of 10</p>
+            <h2 style='margin: 15px 0; color: {color}; font-size: 32px;'>{emoji} {status}</h2>
         </div>
         """, unsafe_allow_html=True)
         
-        # Recommendations
+        # Personalized recommendations
         st.markdown("---")
-        st.markdown("### 💡 Recommendations")
+        st.markdown("### 💡 Personalized Recommendations")
         
         recommendations = []
         
         if input_sleep < 7:
-            recommendations.append(f"😴 **Sleep More:** You're getting {input_sleep:.1f}h. Aim for 7-8h.")
+            recommendations.append("😴 **Improve Sleep:** Try to get at least 7-8 hours of sleep per night for better wellbeing.")
+        
         if input_stress >= 7:
-            recommendations.append(f"🧘 **Manage Stress:** Level {input_stress}/10 is high. Try meditation.")
+            recommendations.append("🧘 **Manage Stress:** Consider stress-reduction techniques like meditation, exercise, or talking to someone.")
+        
         if input_screen > 6:
-            recommendations.append(f"📱 **Reduce Screen:** {input_screen:.1f}h is above average.")
+            recommendations.append("📱 **Reduce Screen Time:** High screen time may impact wellbeing. Try taking regular breaks.")
+        
+        if input_activity < df['Physical_Activity'].median():
+            recommendations.append("🏃 **Increase Physical Activity:** Regular exercise is strongly linked to better mental health.")
+        
         if input_friends == 'No':
-            recommendations.append("👥 **Build Connections:** Having friends improves wellbeing.")
+            recommendations.append("👥 **Build Social Connections:** Having close friends is associated with higher wellbeing scores.")
+        
+        if input_work > 9:
+            recommendations.append("⚖️ **Work-Life Balance:** Long work hours may contribute to stress. Try to maintain balance.")
         
         if not recommendations:
-            recommendations.append("✅ **Great Job!** Keep these healthy habits!")
+            recommendations.append("✅ **Keep It Up!** Your lifestyle factors look good. Maintain these healthy habits!")
         
-        for i, rec in enumerate(recommendations, 1):
-            st.markdown(f"{i}. {rec}")
+        for rec in recommendations:
+            st.markdown(f"- {rec}")
         
-        # Comparison
         st.markdown("---")
+        
+        # Comparison with dataset
+        st.markdown("### 📊 How You Compare")
+        
         col_comp1, col_comp2, col_comp3 = st.columns(3)
         
         with col_comp1:
-            avg_wb = df['Overall_Wellbeing_Score'].mean()
-            diff = prediction - avg_wb
-            st.metric("vs Average", f"{prediction:.1f}", f"{diff:+.1f}")
+            avg_wellbeing = df['Overall_Wellbeing_Score'].mean()
+            diff = prediction - avg_wellbeing
+            st.metric(
+                "vs Average Wellbeing",
+                f"{prediction:.1f}",
+                f"{diff:+.1f}",
+                delta_color="normal"
+            )
         
         with col_comp2:
             percentile = (df['Overall_Wellbeing_Score'] < prediction).sum() / len(df) * 100
-            st.metric("Percentile", f"{percentile:.0f}%")
+            st.metric(
+                "Your Percentile",
+                f"{percentile:.0f}%",
+                "Higher is better"
+            )
         
         with col_comp3:
-            similar = len(df[(df['Overall_Wellbeing_Score'] >= prediction - 0.5) & 
-                            (df['Overall_Wellbeing_Score'] <= prediction + 0.5)])
-            st.metric("Similar People", f"{similar}")
+            similar_count = len(df[(df['Overall_Wellbeing_Score'] >= prediction - 0.5) & 
+                                  (df['Overall_Wellbeing_Score'] <= prediction + 0.5)])
+            st.metric(
+                "Similar People",
+                f"{similar_count}",
+                f"in dataset"
+            )
 
 # ============================================================================
 # MAIN APPLICATION
@@ -1285,7 +1484,7 @@ def main():
     <div style='text-align: center; padding: 20px;'>
         <h1 style='font-size: 3.5rem; margin-bottom: 0;'>🧠 Mental Health Analytics</h1>
         <p style='font-size: 1.3rem; color: #667eea; font-weight: 600;'>
-            Powered by AI & Data Science
+            Powered by AI & Advanced Data Science
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -1296,33 +1495,50 @@ def main():
     df_filtered = apply_filters(df, filters)
     
     if len(df_filtered) == 0:
-        st.warning("⚠️ No data matches filters. Adjust selections.")
+        st.warning("⚠️ No data matches your filters. Please adjust your filter selections.")
         st.stop()
     
     st.sidebar.markdown("---")
-    st.sidebar.metric("📊 Records", f"{len(df_filtered):,} / {len(df):,}")
+    st.sidebar.metric("📊 Filtered Records", f"{len(df_filtered):,} / {len(df):,}")
     
     st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📥 Export Data")
     csv = df_filtered.to_csv(index=False)
-    st.sidebar.download_button("📥 Download", csv, "data.csv", "text/csv", use_container_width=True)
+    st.sidebar.download_button(
+        label="Download Filtered Data",
+        data=csv,
+        file_name="filtered_mental_health_data.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
     
-    with st.sidebar.expander("ℹ️ About"):
+    with st.sidebar.expander("ℹ️ About This Dashboard"):
         st.markdown("""
-        **Mental Health Analytics v3.0**
+        **Mental Health & Lifestyle Dashboard v3.0**
         
-        - 15+ Interactive Charts
-        - AI Predictions
-        - Real-time Filtering
+        This dashboard analyzes the relationship between lifestyle factors and mental health outcomes.
         
-        Built with ❤️
+        **Features:**
+        - Interactive filtering
+        - Real-time analytics
+        - ML predictions
+        - Data export
+        - 15+ Advanced visualizations
+        
+        **Built with:**
+        - Streamlit
+        - Plotly
+        - Scikit-learn
+        
+        **Version:** 3.0.0
         """)
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 Dashboard",
-        "🏃 Lifestyle",
-        "🔍 Segments",
-        "📈 Correlations",
-        "🤖 AI Predictor"
+        "📊 Overview",
+        "🏃 Lifestyle Drivers",
+        "🔍 Segment Comparison",
+        "📈 Correlations & Data Quality",
+        "🤖 AI Wellbeing Predictor"
     ])
     
     with tab1:
@@ -1346,10 +1562,10 @@ def main():
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                 border-radius: 15px; color: white;'>
         <p style='margin: 0; font-size: 16px; font-weight: 600;'>
-            🧠 Mental Health Analytics v3.0
+            🧠 Mental Health & Lifestyle Analytics Dashboard v3.0
         </p>
-        <p style='margin: 5px 0 0 0; font-size: 13px;'>
-            For educational purposes only
+        <p style='margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;'>
+            For educational purposes only | Consult healthcare professionals for medical advice
         </p>
     </div>
     """, unsafe_allow_html=True)
