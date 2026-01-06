@@ -11,6 +11,18 @@ import warnings
 import gc
 warnings.filterwarnings('ignore')
 
+
+def apply_plotly_readable(fig):
+    fig.update_layout(
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font=dict(color="#0f172a", family="Poppins"),
+        margin=dict(l=10, r=10, t=60, b=10),
+    )
+    fig.update_xaxes(gridcolor="rgba(15,23,42,0.08)")
+    fig.update_yaxes(gridcolor="rgba(15,23,42,0.08)")
+    return fig
+
 # ============================================================================
 # PAGE CONFIGURATION
 # ============================================================================
@@ -25,136 +37,167 @@ st.set_page_config(
 # MAGICAL CSS STYLING
 # ============================================================================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-    
-    * {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0;
-    }
-    
-    .block-container {
-        padding: 2rem 3rem;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        margin: 1rem;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    
-    .stMetric {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        color: white;
-        transition: transform 0.3s ease;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
-    }
-    
-    .stMetric label {
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-weight: 600 !important;
-        font-size: 14px !important;
-    }
-    
-    h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700;
-        font-size: 3rem;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    h2 {
-        color: #667eea;
-        font-weight: 600;
-        margin-top: 2rem;
-    }
-    
-    h3 {
-        color: #764ba2;
-        font-weight: 600;
-    }
-    
-    .insight-box {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        padding: 20px;
-        border-radius: 15px;
-        color: white;
-        margin: 15px 0;
-        box-shadow: 0 8px 20px rgba(240, 147, 251, 0.4);
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 10px;
-        border-radius: 15px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: white !important;
-        color: #667eea !important;
-    }
-    
-    .stButton>button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 30px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-    
-    .highlight-card {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        padding: 20px;
-        border-radius: 15px;
-        margin: 10px 0;
-        box-shadow: 0 8px 20px rgba(168, 237, 234, 0.4);
-    }
-    
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root{
+  --bg1:#667eea;
+  --bg2:#764ba2;
+  --text:#0f172a;
+  --muted:#475569;
+  --card:#ffffff;
+  --card2:#f8fafc;
+  --border:rgba(15,23,42,0.12);
+}
+
+*{font-family:'Poppins',sans-serif;}
+
+/* Page background */
+.stApp{
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+}
+
+/* Main readable panel */
+.block-container{
+  padding: 2rem 2.5rem;
+  background: rgba(255,255,255,0.97);
+  border-radius: 18px;
+  margin: 1rem;
+  box-shadow: 0 18px 55px rgba(0,0,0,0.28);
+}
+
+/* Make normal text always readable */
+h1,h2,h3,h4,h5,h6,p,li,span,div{color:var(--text);}
+.stCaption, .stMarkdown p{color:var(--muted);}
+
+/* ---------- KPI / Metric cards (reliable selector) ---------- */
+div[data-testid="stMetric"]{
+  background: linear-gradient(180deg, var(--card), var(--card2));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.08);
+}
+div[data-testid="stMetric"] *{
+  color: var(--text) !important;
+}
+div[data-testid="stMetricValue"]{
+  font-size: 28px !important;
+  font-weight: 800 !important;
+}
+div[data-testid="stMetricLabel"]{
+  font-weight: 700 !important;
+}
+div[data-testid="stMetricDelta"]{
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+/* Headers */
+h1{
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  font-weight:800;
+  font-size:3rem;
+  text-align:center;
+  margin-bottom:0.4rem;
+}
+h2{color:var(--bg1); font-weight:700;}
+h3{color:var(--bg2); font-weight:700;}
+
+/* Insight box — change to soft background + dark text */
+.insight-box{
+  background: #eef2ff;
+  border: 1px solid rgba(102,126,234,0.25);
+  border-left: 6px solid var(--bg1);
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(2,6,23,0.08);
+}
+.insight-box, .insight-box *{
+  color: var(--text) !important;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"]{
+  gap:8px;
+  background:#f1f5f9;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid var(--border);
+}
+.stTabs [data-baseweb="tab"]{
+  height:46px;
+  background:#ffffff;
+  border-radius:12px;
+  color:var(--text);
+  font-weight:700;
+  border:1px solid var(--border);
+}
+.stTabs [aria-selected="true"]{
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%) !important;
+  color:#ffffff !important;
+  border:none !important;
+}
+.stTabs [aria-selected="true"] p{color:#ffffff !important;}
+
+/* Buttons */
+.stButton>button, .stDownloadButton>button{
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+  color:#ffffff !important;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
+  padding:10px 16px;
+  box-shadow: 0 8px 18px rgba(102,126,234,0.25);
+}
+.stButton>button:hover, .stDownloadButton>button:hover{
+  transform: translateY(-1px);
+}
+
+/* Sidebar background */
+[data-testid="stSidebar"]{
+  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+}
+
+/* Sidebar titles stay white */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] h4,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stMarkdown p{
+  color: #ffffff !important;
+}
+
+/* IMPORTANT: Inputs in sidebar must be dark text on light background */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea{
+  color: #0f172a !important;
+}
+
+/* Selectbox / multiselect container backgrounds + text */
+[data-testid="stSidebar"] [data-baseweb="select"]{
+  background: rgba(255,255,255,0.98) !important;
+  border-radius: 10px;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] *{
+  color: #0f172a !important;
+}
+
+/* Multiselect tags readable */
+[data-testid="stSidebar"] .stMultiSelect span{
+  color:#0f172a !important;
+}
+
+/* Remove unstable legacy class hooks */
+.css-1d391kg, .css-1v0mbdj { color: inherit !important; }
+
+</style>
+""", unsafe_allow_html=True)
+
 
 # ============================================================================
 # DATA LOADING
@@ -358,10 +401,8 @@ def page_overview(df):
         fig.update_layout(
             height=350,
             margin=dict(l=20, r=20, t=60, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            font={'color': "#667eea", 'family': "Poppins"}
         )
-        
+        fig = apply_plotly_readable(fig) 
         st.plotly_chart(fig, use_container_width=True, key="gauge_wellbeing")
         st.caption("🎯 Target: 7+ for optimal wellbeing")
     
@@ -423,10 +464,9 @@ def page_overview(df):
     fig.update_layout(
         height=500,
         margin=dict(l=0, r=0, t=50, b=0),
-        font={'family': 'Poppins', 'size': 12},
-        paper_bgcolor='rgba(0,0,0,0)'
+        font={'family': 'Poppins', 'size': 12}
     )
-    
+    fig = apply_plotly_readable(fig) 
     st.plotly_chart(fig, use_container_width=True, key="sunburst_mental")
     st.caption("💡 Click on segments to drill down into specific groups")
     
@@ -507,7 +547,7 @@ def page_overview(df):
     
     insights_html = f"""
     <div class="insight-box">
-        <h3 style="color: white; margin-top: 0;">📊 Current Population Insights</h3>
+        <h3 style="margin-top: 0;">📊 Current Population Insights</h3>
         <ul style="font-size: 1.05rem; line-height: 1.8;">
             <li><strong>Wellbeing Status:</strong> {avg_wb:.1f}/10 - {'🟢 Excellent' if avg_wb >= 7 else '🟡 Good' if avg_wb >= 5 else '🔴 Needs Attention'}</li>
             <li><strong>Stress Level:</strong> {avg_stress:.1f}/10 - {'🔴 High Alert' if avg_stress >= 7 else '🟡 Moderate' if avg_stress >= 5 else '🟢 Healthy'}</li>
