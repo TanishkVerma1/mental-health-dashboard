@@ -29,32 +29,36 @@ def apply_plotly_readable(fig, title_size=20):
         margin=dict(l=50, r=20, t=70, b=50),
     )
 
-    # Axes (works for most 2D charts)
-    fig.update_xaxes(
-        title_font=dict(color="#0f172a", size=14),
-        tickfont=dict(color="#0f172a", size=12),
-        gridcolor="rgba(15,23,42,0.08)",
-        zerolinecolor="rgba(15,23,42,0.12)",
-    )
-    fig.update_yaxes(
-        title_font=dict(color="#0f172a", size=14),
-        tickfont=dict(color="#0f172a", size=12),
-        gridcolor="rgba(15,23,42,0.08)",
-        zerolinecolor="rgba(15,23,42,0.12)",
-    )
-
-    # Polar charts (radar)
-    fig.update_polars(
-        bgcolor="white",
-        radialaxis=dict(
+    try:
+        fig.update_xaxes(
+            title_font=dict(color="#0f172a", size=14),
             tickfont=dict(color="#0f172a", size=12),
-            gridcolor="rgba(15,23,42,0.10)"
-        ),
-        angularaxis=dict(
-            tickfont=dict(color="#0f172a", size=12),
-            gridcolor="rgba(15,23,42,0.08)"
+            gridcolor="rgba(15,23,42,0.08)",
+            zerolinecolor="rgba(15,23,42,0.12)",
         )
-    )
+        fig.update_yaxes(
+            title_font=dict(color="#0f172a", size=14),
+            tickfont=dict(color="#0f172a", size=12),
+            gridcolor="rgba(15,23,42,0.08)",
+            zerolinecolor="rgba(15,23,42,0.12)",
+        )
+    except Exception:
+        pass
+
+    try:
+        fig.update_polars(
+            bgcolor="white",
+            radialaxis=dict(
+                tickfont=dict(color="#0f172a", size=12),
+                gridcolor="rgba(15,23,42,0.10)"
+            ),
+            angularaxis=dict(
+                tickfont=dict(color="#0f172a", size=12),
+                gridcolor="rgba(15,23,42,0.08)"
+            )
+        )
+    except Exception:
+        pass
 
     # 3D charts
     if hasattr(fig.layout, "scene") and fig.layout.scene:
@@ -79,14 +83,17 @@ def apply_plotly_readable(fig, title_size=20):
             )
         )
 
-    # Annotations (heatmap text, hline labels etc.)
+    # Annotations (heatmap text, hline labels etc.) - SAFE
     if getattr(fig.layout, "annotations", None):
-        fig.update_layout(
-            annotations=[
-                dict(a, font=dict(color="#0f172a", size=12))
-                for a in fig.layout.annotations
-            ]
-        )
+        fixed = []
+        for a in fig.layout.annotations:
+            a_json = a.to_plotly_json() if hasattr(a, "to_plotly_json") else dict(a)
+            a_json.setdefault("font", {})
+            a_json["font"]["color"] = "#0f172a"
+            a_json["font"].setdefault("size", 12)
+            fixed.append(a_json)
+        fig.update_layout(annotations=fixed)
+
 
     return fig
 
