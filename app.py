@@ -12,15 +12,82 @@ import gc
 warnings.filterwarnings('ignore')
 
 
-def apply_plotly_readable(fig):
+def apply_plotly_readable(fig, title_size=20):
+    # Global readable layout
     fig.update_layout(
+        template="plotly_white",
         paper_bgcolor="white",
         plot_bgcolor="white",
-        font=dict(color="#0f172a", family="Poppins"),
-        margin=dict(l=10, r=10, t=60, b=10),
+        font=dict(color="#0f172a", family="Poppins", size=13),
+        title=dict(font=dict(color="#0f172a", size=title_size), x=0.02, xanchor="left"),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="rgba(15,23,42,0.12)",
+            borderwidth=1,
+            font=dict(color="#0f172a")
+        ),
+        margin=dict(l=50, r=20, t=70, b=50),
     )
-    fig.update_xaxes(gridcolor="rgba(15,23,42,0.08)")
-    fig.update_yaxes(gridcolor="rgba(15,23,42,0.08)")
+
+    # Axes (works for most 2D charts)
+    fig.update_xaxes(
+        title_font=dict(color="#0f172a", size=14),
+        tickfont=dict(color="#0f172a", size=12),
+        gridcolor="rgba(15,23,42,0.08)",
+        zerolinecolor="rgba(15,23,42,0.12)",
+    )
+    fig.update_yaxes(
+        title_font=dict(color="#0f172a", size=14),
+        tickfont=dict(color="#0f172a", size=12),
+        gridcolor="rgba(15,23,42,0.08)",
+        zerolinecolor="rgba(15,23,42,0.12)",
+    )
+
+    # Polar charts (radar)
+    fig.update_polars(
+        bgcolor="white",
+        radialaxis=dict(
+            tickfont=dict(color="#0f172a", size=12),
+            gridcolor="rgba(15,23,42,0.10)"
+        ),
+        angularaxis=dict(
+            tickfont=dict(color="#0f172a", size=12),
+            gridcolor="rgba(15,23,42,0.08)"
+        )
+    )
+
+    # 3D charts
+    if hasattr(fig.layout, "scene") and fig.layout.scene:
+        fig.update_layout(
+            scene=dict(
+                bgcolor="white",
+                xaxis=dict(
+                    titlefont=dict(color="#0f172a"),
+                    tickfont=dict(color="#0f172a"),
+                    gridcolor="rgba(15,23,42,0.08)"
+                ),
+                yaxis=dict(
+                    titlefont=dict(color="#0f172a"),
+                    tickfont=dict(color="#0f172a"),
+                    gridcolor="rgba(15,23,42,0.08)"
+                ),
+                zaxis=dict(
+                    titlefont=dict(color="#0f172a"),
+                    tickfont=dict(color="#0f172a"),
+                    gridcolor="rgba(15,23,42,0.08)"
+                ),
+            )
+        )
+
+    # Annotations (heatmap text, hline labels etc.)
+    if getattr(fig.layout, "annotations", None):
+        fig.update_layout(
+            annotations=[
+                dict(a, font=dict(color="#0f172a", size=12))
+                for a in fig.layout.annotations
+            ]
+        )
+
     return fig
 
 # ============================================================================
@@ -194,6 +261,11 @@ h3{color:var(--bg2); font-weight:700;}
 
 /* Remove unstable legacy class hooks */
 .css-1d391kg, .css-1v0mbdj { color: inherit !important; }
+
+/* Plotly modebar visibility */
+.modebar, .modebar * {
+  color: #0f172a !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -402,7 +474,7 @@ def page_overview(df):
             height=350,
             margin=dict(l=20, r=20, t=60, b=20),
         )
-        fig = apply_plotly_readable(fig) 
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="gauge_wellbeing")
         st.caption("🎯 Target: 7+ for optimal wellbeing")
     
@@ -519,15 +591,10 @@ def page_overview(df):
                    'Overall_Wellbeing_Score': 'Wellbeing'}
         )
         
-        fig.update_layout(
-            height=400,
-            margin=dict(l=0, r=0, t=50, b=0),
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)'
-        )
-        
+        fig.update_layout(height=400, margin=dict(l=0, r=0, t=50, b=0))
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="3d_scatter")
-        st.caption("🔄 Drag to rotate | Scroll to zoom")
+
     
     # Insights
     st.markdown("---")
@@ -595,15 +662,10 @@ def page_lifestyle(df):
         line=dict(color='red', width=3, dash='dash')
     ))
     
-    fig.update_layout(
-        height=500,
-        font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(250,250,250,1)',
-        hovermode='closest'
-    )
-    
+    fig.update_layout(height=500, hovermode="closest")
+    fig = apply_plotly_readable(fig)
     st.plotly_chart(fig, use_container_width=True, key="bubble_screen")
+
     
     corr = df[['Screen_Time_per_Day', 'Overall_Wellbeing_Score']].corr().iloc[0, 1]
     st.caption(f"📊 Correlation: {corr:.3f} - {'Negative relationship' if corr < -0.1 else 'Positive relationship' if corr > 0.1 else 'Weak relationship'}")
@@ -650,14 +712,10 @@ def page_lifestyle(df):
         )
     )
     
-    fig.update_layout(
-        title='Parallel Coordinates: Lifestyle Factors (Color = Wellbeing)',
-        height=500,
-        font={'family': 'Poppins', 'size': 12},
-        paper_bgcolor='rgba(0,0,0,0)'
-    )
-    
+    fig.update_layout(height=500)
+    fig = apply_plotly_readable(fig)
     st.plotly_chart(fig, use_container_width=True, key="parallel_coords")
+
     st.caption("💡 Drag on axes to filter | Green lines = high wellbeing | Red lines = low wellbeing")
     
     st.markdown("---")
@@ -706,10 +764,9 @@ def page_lifestyle(df):
                 showlegend=True,
                 title='High Wellbeing Profile',
                 height=400,
-                font={'family': 'Poppins'},
-                paper_bgcolor='rgba(0,0,0,0)'
+                font={'family': 'Poppins'}
             )
-            
+            fig = apply_plotly_readable(fig)
             st.plotly_chart(fig, use_container_width=True, key="radar_high")
         else:
             st.info("Not enough data for high wellbeing profile")
@@ -749,10 +806,9 @@ def page_lifestyle(df):
                 showlegend=True,
                 title='Low Wellbeing Profile',
                 height=400,
-                font={'family': 'Poppins'},
-                paper_bgcolor='rgba(0,0,0,0)'
+                font={'family': 'Poppins'}
             )
-            
+            fig = apply_plotly_readable(fig)
             st.plotly_chart(fig, use_container_width=True, key="radar_low")
         else:
             st.info("Not enough data for low wellbeing profile")
@@ -787,10 +843,9 @@ def page_lifestyle(df):
             xaxis_title='Work Hours per Day',
             yaxis_title='Sleep Quality',
             height=400,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)'
+            font={'family': 'Poppins'}
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="heatmap_sleep_work")
         st.caption("🟢 Green = High wellbeing | 🔴 Red = Low wellbeing")
     else:
@@ -848,11 +903,9 @@ def page_segments(df):
         title="Impact of Lifestyle Factors on Wellbeing",
         showlegend=False,
         height=450,
-        font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)',
-        yaxis_title="Wellbeing Score Impact"
+        font={'family': 'Poppins'}
     )
-    
+    fig = apply_plotly_readable(fig)
     st.plotly_chart(fig, use_container_width=True, key="waterfall_wellbeing")
     st.caption("📊 Shows how each factor contributes to overall wellbeing")
     
@@ -883,11 +936,9 @@ def page_segments(df):
             yaxis_title='Wellbeing Score',
             height=400,
             showlegend=True,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            font={'family': 'Poppins'}
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="box_gender")
     
     with col2:
@@ -911,11 +962,9 @@ def page_segments(df):
             yaxis_title='Wellbeing Score',
             height=400,
             showlegend=True,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            font={'family': 'Poppins'}
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="box_friends")
     
     st.caption("📊 Box shows middle 50% | Line = median | Diamond = mean")
@@ -1019,12 +1068,11 @@ def page_correlations(df):
     fig.update_layout(
         title='Interactive Correlation Matrix',
         height=600,
-        font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)',
+        font={'family': 'Poppins'}
         xaxis={'side': 'bottom'},
         yaxis={'side': 'left'}
     )
-    
+    fig = apply_plotly_readable(fig)
     st.plotly_chart(fig, use_container_width=True, key="corr_heatmap_advanced")
     
     st.markdown("""
@@ -1145,11 +1193,9 @@ def page_correlations(df):
             xaxis_title='Column',
             yaxis_title='Percentage Missing (%)',
             height=400,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            font={'family': 'Poppins'}
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="missing_data")
     else:
         st.success("✅ No missing data detected!")
@@ -1263,11 +1309,9 @@ def page_ml_predictor(df):
         xaxis_title='Importance Score',
         yaxis_title='Feature',
         height=500,
-        font={'family': 'Poppins'},
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(250,250,250,1)'
+        font={'family': 'Poppins'}
     )
-    
+    fig = apply_plotly_readable(fig)
     st.plotly_chart(fig, use_container_width=True, key="feature_importance")
     
     st.markdown("---")
@@ -1313,11 +1357,9 @@ def page_ml_predictor(df):
             yaxis_title='Predicted Wellbeing Score',
             height=400,
             font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)',
             showlegend=True
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="actual_vs_pred")
     
     with col_chart2:
@@ -1348,11 +1390,9 @@ def page_ml_predictor(df):
             xaxis_title='Predicted Wellbeing Score',
             yaxis_title='Prediction Error',
             height=400,
-            font={'family': 'Poppins'},
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(250,250,250,1)'
+            font={'family': 'Poppins'}
         )
-        
+        fig = apply_plotly_readable(fig)
         st.plotly_chart(fig, use_container_width=True, key="residuals")
     
     st.markdown("---")
