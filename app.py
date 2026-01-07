@@ -1068,7 +1068,7 @@ def page_correlations(df):
     fig.update_layout(
         title='Interactive Correlation Matrix',
         height=600,
-        font={'family': 'Poppins'}
+        font={'family': 'Poppins'},
         xaxis={'side': 'bottom'},
         yaxis={'side': 'left'}
     )
